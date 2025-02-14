@@ -4,11 +4,29 @@ from utils import valueName,checkNum, currentDate, connectClicked
 from csv_ import File
 from windowsW import WindowError, WindowDialog
 from typing import Callable
+import sqlite3
 
 
 class AddWindow(QWidget):
     def __init__(self, parent=None, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+
+
+
+        # Conectar ao banco de dados
+        self.conn = sqlite3.connect('financas.db')
+        self.cursor = self.conn.cursor()
+
+        # Criar tabela, caso não exista
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS financas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nomeDoGasto TEXT NOT NULL,
+                valor FLOAT,
+                data TEXT
+            )
+        ''')
+        self.conn.commit()
 
         # Configurações
         self.setWindowTitle(f"Adicionar")
@@ -54,10 +72,17 @@ class AddWindow(QWidget):
             self.file.add([{'Data' : f'{currentDate}',
                                      'Nome' : f'{nome}', 
                                      'Valor' : f'R${float(valor):.2f}'}])
-            self.showDialog('Gasto adicionado com sucesso!')
-            return 
+            try:
+                self.cursor.execute(
+                    'INSERT INTO financas (nomeDoGasto, valor, data) VALUES (?, ?, ?)',
+                    (nome, float(valor), currentDate)
+                )
+                self.conn.commit()
+                self.showDialog('Gasto adicionado com sucesso!')
+            except Exception as e:
+                self.showError(f'Erro ao salvar no banco: {e}')
+            return
         self.showError('Você não digitou algum dos campos')
-        
 
     def showError(self, msg: str) -> None:
         self.windowError = WindowError(msg)

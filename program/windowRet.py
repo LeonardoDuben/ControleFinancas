@@ -34,7 +34,7 @@ class JanelaRetirar(QWidget):
 
         self.resize(450, 100)
 
-    def withDrawExpense(self) -> None:
+    def withDrawExpense(self, gasto_id) -> None:
         i: str = self.displayIndex.text()
         self.displayIndex.clear()
         checagem: bool = checkIndex(i)
@@ -43,6 +43,12 @@ class JanelaRetirar(QWidget):
             self.showError('Índice inválido!')
         else:
             self.file.remove(int(i))
+            try:
+                self.cursor.execute('DELETE FROM financas WHERE id = ?', (gasto_id))
+                self.conn.commit()
+                self.showDialog('Gasto removido')
+            except Exception as e:
+                self.showError(f'Erro ao remover o gasto: {e}')
             self.showDialog('Índice removido com sucesso!')
 
     def showError(self, msg: str) -> None:
